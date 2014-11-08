@@ -1,6 +1,6 @@
 
 #### JSONFileStore
-The JSONFileStore handles data storage via JSONFILE.
+The JSONFileStore handles data storage via JSONFILE.    
 
 Core tests run: {"testsCreated":430}    
 
@@ -463,7 +463,8 @@ function listReady(list, error) {
   callback(true);
 }
 ```
-<blockquote><strong>log: </strong>Moe,Larry,Shemp<br><strong>log: </strong>2<br><strong>log: </strong>2<br><strong>log: </strong>a JSONFileStore JSONFileStore<br>returns <strong>true</strong> as expected
+<blockquote><strong>log: </strong>Moe,Shemp,Larry<br><strong>log: </strong>2<br><strong>log: </strong>2<br><strong>log: </strong>a JSONFileStore JSONFileStore<br>returns <strong>true</strong> as expected
+<br>Assertion(s) failed
 </blockquote>
 &nbsp;<b><i>Test variations on getList method.:</i></b>
 ```javascript
@@ -658,5 +659,5 @@ function getAlphabetical() {
 ```
 <blockquote><strong>log: </strong>a JSONFileStore<br>returns <strong>true</strong> as expected
 </blockquote>
-## [&#9664;](#-JSONFILE)&nbsp;[&#8984;](#table-of-contents) &nbsp;Summary
+## [&#9664;](#-jsonfile)&nbsp;[&#8984;](#table-of-contents) &nbsp;Summary
 This documentation generated with https://github.com/tgicloud/tgi-spec.<br>TODO put testin stats here.    

@@ -6,16 +6,14 @@ var testSpec = require('../dist/tgi-store-json-file.spec.js');
 var spec = new Spec();
 var UTILITY = require('tgi-utility/dist/tgi.utility');
 var CORE = require('../dist/tgi-store-json-file.js');
-var fs = require('fs');
 
 (function () {
   UTILITY().injectMethods(this);
   CORE().injectMethods(this);
   testSpec(spec, CORE);
-
-  var mongo = require('JSONFILE');
-  var JSONFileStore = new JSONFileStore({name: 'Host Test Store'});
-  JSONFileStore.onConnect('http://localhost', function (store, err) {
+  var fs = require('fs');
+  var myJSONFileStore = new JSONFileStore({name: 'Host Test Store'});
+  myJSONFileStore.onConnect('http://localhost', function (store, err) {
     if (err) {
       console.log('JSONFileStore unavailable (' + err + ')');
       process.exit(1);
@@ -42,7 +40,7 @@ var fs = require('fs');
         }
       });
     }
-  }, {vendor:mongo, keepConnection: true});
+  }, {vendor:fs, keepConnection: true});
 
 }());
 

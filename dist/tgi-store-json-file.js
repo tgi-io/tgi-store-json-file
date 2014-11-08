@@ -30,7 +30,6 @@ var JSONFILE = function () {
     Workspace: Workspace,
     JSONFileStore: JSONFileStore,
     injectMethods: function (that) {
-      console.log('JSONFILE injectMethods');
       that.Application = Application;
       that.Attribute = Attribute;
       that.Command = Command;
@@ -1919,8 +1918,8 @@ JSONFileStore.prototype = Object.create(Store.prototype);
 JSONFileStore.prototype.onConnect = function (location, callBack, options) {
   if (typeof location != 'string') throw new Error('argument must a url string');
   if (typeof callBack != 'function') throw new Error('argument must a callback');
-  if (options && options.fs)
-    JSONFileStore.fs = options.fs;
+  if (options && options.vendor)
+    JSONFileStore.fs = options.vendor;
   callBack(this, undefined);
 };
 JSONFileStore.prototype.putModel = function (model, callBack) {
