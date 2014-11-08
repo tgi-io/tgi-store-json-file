@@ -1,0 +1,13 @@
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/misc/lib-footer
+ **/
+  /* istanbul ignore next */
+  if (typeof exports !== 'undefined') {
+    if (typeof module !== 'undefined' && module.exports) {
+      exports = module.exports = JSONFILE;
+    }
+    exports.JSONFILE = JSONFILE;
+  } else {
+    root.JSONFILE = JSONFILE;
+  }
+}).call(this);
