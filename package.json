@@ -25,7 +25,6 @@
     "application",
     "app",
     "api",
-    "mongdb",
     "framework"
   ],
   "author": "Sean Smith <sean@tgicloud.com>",

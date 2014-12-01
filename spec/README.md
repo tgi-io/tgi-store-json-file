@@ -463,7 +463,7 @@ function listReady(list, error) {
   callback(true);
 }
 ```
-<blockquote><strong>log: </strong>Moe,Shemp,Larry<br><strong>log: </strong>2<br><strong>log: </strong>2<br><strong>log: </strong>a JSONFileStore JSONFileStore<br>returns <strong>true</strong> as expected
+<blockquote><strong>log: </strong>Moe,Larry,Shemp<br><strong>log: </strong>2<br><strong>log: </strong>2<br><strong>log: </strong>a JSONFileStore JSONFileStore<br>returns <strong>true</strong> as expected
 <br>Assertion(s) failed
 </blockquote>
 &nbsp;<b><i>Test variations on getList method.:</i></b>

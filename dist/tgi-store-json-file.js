@@ -1904,14 +1904,6 @@ var JSONFileStore = function (args) {
   for (var i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
   if (errorList.length > 1) throw new Error('error creating Store: multiple errors');
   if (errorList.length) throw new Error('error creating Store: ' + errorList[0]);
-  //if (JSONFileStore._connection) {
-  //  this.storeProperty.isReady = true;
-  //  this.storeProperty.canGetModel = true;
-  //  this.storeProperty.canPutModel = true;
-  //  this.storeProperty.canDeleteModel = true;
-  //  this.mongoServer = JSONFileStore._connection.mongoServer;
-  //  this.mongoDatabase = JSONFileStore._connection.mongoDatabase;
-  //}
 };
 JSONFileStore.prototype = Object.create(Store.prototype);
 // Methods
