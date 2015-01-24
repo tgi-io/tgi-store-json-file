@@ -4,33 +4,58 @@
 (function () {
 "use strict";
 var root = this;
-var testSpec = function(spec,CORE) {
-spec.mute(true);
+var testSpec = function(spec,TGI) {
+  var tgiCore = TGI.CORE();
+  var Application = tgiCore.Application;
+  var Attribute = tgiCore.Attribute;
+  var Command = tgiCore.Command;
+  var Delta = tgiCore.Delta;
+  var Interface = tgiCore.Interface;
+  var List = tgiCore.List;
+  var Log = tgiCore.Log;
+  var MemoryStore = tgiCore.MemoryStore;
+  var Message = tgiCore.Message;
+  var Model = tgiCore.Model;
+  var Presentation = tgiCore.Presentation;
+  var Procedure = tgiCore.Procedure;
+  var REPLInterface = tgiCore.REPLInterface;
+  var Request = tgiCore.Request;
+  var Session = tgiCore.Session;
+  var Store = tgiCore.Store;
+  var Transport = tgiCore.Transport;
+  var User = tgiCore.User;
+  var Workspace = tgiCore.Workspace;
+  var inheritPrototype = tgiCore.inheritPrototype;
+  var getInvalidProperties = tgiCore.getInvalidProperties;
+  var λ = tgiCore.λ;
+  var trim = tgiCore.trim;
+  var ltrim = tgiCore.ltrim;
+  var rtrim = tgiCore.rtrim;
+  var left = tgiCore.left;
+  var center = tgiCore.center;
+  var right = tgiCore.right;
+  var lpad = tgiCore.lpad;
+  var rpad = tgiCore.rpad;
+  var cpad = tgiCore.cpad;
+  var contains = tgiCore.contains;
+
 /**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/tgi-core.test.js
+ * tgi-store-json-file/lib/_packaging/spec-header
  **/
-/**
- * Doc Intro
- */
+  var JSONFileStore = TGI.STORE.JSONFILE().JSONFileStore;
+  spec.mute(true);
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/tgi-core.spec.js
+ **/
 spec.test('lib/tgi-spec-intro', 'tgi-core', 'Core Repository', function (callback) {
-  spec.paragraph('Core objects, models, stores and interfaces.');
-  spec.index();
-});
-spec.testSection('Core Objects');
-spec.test('tgi-core/lib/tgi-core.test.js', 'CORE', 'exposed as public or exported (node)', function (callback) {
-  spec.paragraph('The CORE function exposes the tgi-core library via global or node module exports.');
-  spec.example('CORE function exposes library', 'function', function () {
-    return typeof CORE;
+  spec.paragraph('Core constructors, models, stores and interfaces.  The constructor functions define the object ' +
+  '"classes" used by the framework.  The Model Constructor is a key part of the core that defines the system ' +
+  'functionality for the framework.  The framework is further extended with a Store and Interface abstract that ' +
+  'provides data store and user interface plugins.');
+  spec.example('TGI.CORE function exposes library', undefined, function () {
+    this.log(TGI.CORE().version);
   });
-  spec.paragraph('Application code written in the TGI Framework does not need the CORE function' +
-  ' since it is visible by closure.');
-  spec.example('core object Model is available in closure', undefined, function () {
-    this.shouldBeTrue(Model == CORE().Model);
-  });
-  spec.example('UTILITY functions are available in closure', '******* sup ********', function () {
-    // https://github.com/tgicloud/tgi-utility
-    return cpad(' sup ',20,'*');
-  });
+  spec.index('##Constructors');
 });
 
 /**---------------------------------------------------------------------------------------------------------------------
@@ -265,19 +290,16 @@ spec.test('tgi-core/lib/tgi-core-attribute.spec.js', 'Attribute', 'defines data 
                 } else {
                   // mismatches bad so should throw error (is caught unless no error or different error)
                   theBad++;
-                  /* jshint ignore:start */
-                  this.shouldThrowError('*', function () {
+                  // NOTE: functions in loops are terrible code practices - except in dorky test cases
+                  this.shouldThrowError('*', function () { // jshint ignore:line
                     new Attribute({name: 'my' + myTypes[i], type: myTypes[i], value: myValues[j]});
-                  });
-                  /* jshint ignore:end */
+                  });// jshint ignore:line
                 }
                 // other objects should throw always
                 theBad++;
-                /* jshint ignore:start */
-                this.shouldThrowError('*', function () {
+                this.shouldThrowError('*', function () { // jshint ignore:line
                   new Attribute({name: 'my' + myTypes[i], type: myTypes[i], value: {}});
-                });
-                /* jshint ignore:end */
+                }); // jshint ignore:line
               }
             return theGood + ' correct assignments ' + theBad + ' errors thrown';
           });
@@ -433,9 +455,9 @@ spec.test('tgi-core/lib/tgi-core-attribute.spec.js', 'Attribute', 'defines data 
           this.shouldBeTrue(myBool.coerce(true) === true && myBool.coerce(1) === true);
           this.shouldBeTrue(myBool.coerce('y') && myBool.coerce('yEs') && myBool.coerce('t') && myBool.coerce('TRUE') && myBool.coerce('1'));
           this.shouldBeTrue(!((myBool.coerce('') || (myBool.coerce('yep')))));
-          // Date
-          this.shouldBeTrue(myDate.coerce('2/21/2014').getTime() === new Date('2/21/2014').getTime());
-          this.shouldBeTrue(myDate.coerce('2/21').getTime() === new Date('2/21/2014').getTime());
+          //// Date {todo this will break in 2016}
+          this.shouldBeTrue(myDate.coerce('2/21/2015').getTime() === new Date('2/21/2015').getTime());
+          this.shouldBeTrue(myDate.coerce('2/21').getTime() === new Date('2/21/2015').getTime());
 
           // TODO
           this.shouldThrowError(Error('coerce cannot determine appropriate value'), function () {
@@ -988,22 +1010,31 @@ spec.test('tgi-core/lib/tgi-core-delta.spec.js', 'Delta', 'represents changes to
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/tgi-core-interface.spec.js
  */
-spec.test('tgi-core/lib/tgi-core-interface.spec.js', 'Interface', 'with humans and such', function (callback) {
-  var SurrogateInterface = Interface; // todo
+spec.test('tgi-core/lib/tgi-core-interface.spec.js', 'Interface', 'enable user to communicate with app', function (callback) {
   spec.paragraph('The Interface core constructor is a prototype for user or system interaction with the application.' +
   ' The SurrogateInterface is a reference to Interface being tested in the suite.');
   spec.heading('CONSTRUCTOR', function () {
-    spec.example('objects created should be an instance of SurrogateInterface', true, function () {
-      var i = new SurrogateInterface();
-      return (i instanceof SurrogateInterface) && (i instanceof Interface);
-    });
-    spec.example('should make sure new operator used', Error('new operator required'), function () {
-      SurrogateInterface(); // jshint ignore:line
-    });
-    spec.example('should make sure argument properties are valid', Error('error creating Procedure: invalid property: yo'), function () {
-      new SurrogateInterface({yo: 'whatup'});
-    });
+    spec.runnerInterfaceConstructor(Interface);
   });
+  spec.runnerInterfaceMethods(Interface);
+});
+spec.runnerInterfaceConstructor = function (SurrogateInterface) {
+  if (new SurrogateInterface().description == 'a REPLInterface') {
+    spec.paragraph('see `Interface` for documentation');
+    spec.mute(true);
+  }
+  spec.example('objects created should be an instance of Interface', true, function () {
+    var i = new SurrogateInterface();
+    return (i instanceof SurrogateInterface) && (i instanceof Interface);
+  });
+  spec.example('should make sure new operator used', Error('new operator required'), function () {
+    SurrogateInterface(); // jshint ignore:line
+  });
+  spec.example('should make sure argument properties are valid', Error('error creating Procedure: invalid property: yo'), function () {
+    new SurrogateInterface({yo: 'whatup'});
+  });
+};
+spec.runnerInterfaceMethods = function (SurrogateInterface) {
   spec.heading('PROPERTIES', function () {
     spec.heading('name', function () {
       spec.example('defaults to (unnamed)', '(unnamed)', function () {
@@ -1011,15 +1042,15 @@ spec.test('tgi-core/lib/tgi-core-interface.spec.js', 'Interface', 'with humans a
       });
     });
     spec.heading('description', function () {
-      spec.example('defaults to a SurrogateInterface', 'a Interface', function () {
-        return new SurrogateInterface().description;
+      spec.example('defaults to Interface implementation', undefined, function () {
+        this.log (new SurrogateInterface().description);
       });
     });
   });
   spec.heading('METHODS', function () {
     spec.heading('toString()', function () {
-      spec.example('should return a description of the message', 'Punched Card SurrogateInterface', function () {
-        return new SurrogateInterface({description: 'Punched Card SurrogateInterface'}).toString();
+      spec.example('should return a description of the message', 'Punched Card Interface', function () {
+        return new SurrogateInterface({description: 'Punched Card Interface'}).toString();
       });
     });
     spec.heading('start()', function () {
@@ -1055,8 +1086,8 @@ spec.test('tgi-core/lib/tgi-core-interface.spec.js', 'Interface', 'with humans a
       });
     });
     spec.heading('notify()', function () {
-      spec.paragraph('The notify method sends a Request to the Interface.  This can be the result of a request sent from the start() callback.');
-      spec.example('must pass a Request object', Error('Request required'), function () {
+      spec.paragraph('The notify method sends a `Message` to the Interface.  This can be the result of a request sent from the start() callback.');
+      spec.example('must pass a Message object', Error('Message required'), function () {
         new SurrogateInterface().notify();
       });
     });
@@ -1089,13 +1120,79 @@ spec.test('tgi-core/lib/tgi-core-interface.spec.js', 'Interface', 'with humans a
         });
       });
     });
+    spec.heading('info(text)', function () {
+      spec.paragraph('Display info to user in background of primary presentation.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().info();
+      });
+      spec.example('must supply the text info', Error('text parameter required'), function () {
+        new Application({interface: new SurrogateInterface()}).info();
+      });
+    });
+
+    spec.heading('ok(prompt, callBack)', function () {
+      spec.paragraph('Pause before proceeding');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().ok();
+      });
+      spec.example('must provide the text prompt param', Error('prompt required'), function () {
+        new Application({interface: new SurrogateInterface()}).ok();
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        new Application({interface: new SurrogateInterface()}).ok('You are about to enter the twilight zone.');
+      });
+    });
+    spec.heading('yesno(prompt, callBack)', function () {
+      spec.paragraph('Query user with a yes no question.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().yesno();
+      });
+      spec.example('must provide the text question param', Error('prompt required'), function () {
+        new Application({interface: new SurrogateInterface()}).yesno();
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        new Application({interface: new SurrogateInterface()}).yesno('Are we there yet?');
+      });
+    });
+    spec.heading('ask(prompt, attribute, callBack)', function () {
+      spec.paragraph('Simple single item prompt.');
+      spec.example('must provide the text question param', Error('prompt required'), function () {
+        new SurrogateInterface().ask();
+      });
+      spec.example('must supply attribute', Error('instance of Attribute a required parameter'), function () {
+        new SurrogateInterface().ask('What it do');
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        new SurrogateInterface().ask('Please enter your name', new Attribute({name: 'Name'}));
+      });
+    });
+    spec.heading('choose(prompt, choices, callBack)', function () {
+      spec.paragraph('prompt to choose an item');
+      spec.example('must provide text prompt first', Error('prompt required'), function () {
+        new SurrogateInterface().choose();
+      });
+      spec.example('must supply array of choices', undefined, function () {
+        this.shouldThrowError(Error('choices array required'), function () {
+          new SurrogateInterface().choose('What it do');
+        });
+        this.shouldThrowError(Error('choices array required'), function () {
+          new SurrogateInterface().choose('this will not', 'work');
+        });
+        this.shouldThrowError(Error('choices array empty'), function () {
+          new SurrogateInterface().choose('empty array?', []);
+        });
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        new SurrogateInterface().choose('choose wisely', ['rock', 'paper', 'scissors']);
+      });
+    });
   });
   spec.heading('Interface Integration', function () {
     spec.example('Test command execution mocking', spec.asyncResults(true), function (callback) {
       // Send 4 mocks and make sure we get 4 callback calls
       var self = this;
       self.callbackCount = 0;
-      var testInterface = new Interface();
+      var testInterface = new SurrogateInterface();
       testInterface.start(new Application(), new Presentation(), function (request) {
         if (request.type == 'mock count')
           self.callbackCount++;
@@ -1109,9 +1206,96 @@ spec.test('tgi-core/lib/tgi-core-interface.spec.js', 'Interface', 'with humans a
       }
       testInterface.mockRequest(cmds);
     });
-  });
+    spec.example('user queries', spec.asyncResults('The End'), function (callback) {
+      var io = new SurrogateInterface();
+      var app = new Application({interface: io});
+      /**
+       * Each test is a function ...
+       */
+      var ok1 = function () {
+        io.mockRequest(new Request('ok'));
+        app.ok('You can mock ok() before', function () {
+          ok2();
+        });
+      };
+      var ok2 = function () {
+        app.ok('You can mock ok() after', function () {
+          yesno1();
+        });
+        io.mockRequest(new Request('ok'));
+      };
+      var yesno1 = function () {
+        app.yesno('Yesno can be true', function (answer) {
+          if (answer)
+            yesno2();
+          else
+            callback('fail');
+        });
+        io.mockRequest(new Request('yes'));
+      };
+      var yesno2 = function () {
+        app.yesno('Yesno can be false', function (answer) {
+          if (!answer)
+            ask1();
+          else
+            callback('fail');
+        });
+        io.mockRequest(new Request('no'));
+      };
+      var ask1 = function () {
+        var name = new Attribute({name: 'Name'});
+        app.ask('What is your name?', name, function (answer) {
+          app.info('Hello ' + answer);
+          if (answer == 'John Doe')
+            ask2();
+          else
+            callback(answer);
+        });
+        io.mockRequest(new Request({type: 'ask', value: 'John Doe'}));
+      };
+      var ask2 = function () {
+        var name = new Attribute({name: 'Name'});
+        io.mockRequest(new Request({type: 'ask'})); // no value like canceled dialog
+        app.ask('Vas is das name?', name, function (answer) {
+          if (undefined === answer)
+            choose1();
+          else
+            callback(answer);
+        });
+      };
+      var choose1 = function () {
+        app.choose('Pick one...', ['chicken', 'beef', 'tofu'], function (choice) {
+          if (choice == 1)
+            choose2();
+          else
+            callback(choice);
+        });
+        io.mockRequest(new Request({type: 'choose', value: 'beef'}));
+      };
+      var choose2 = function () {
+        io.mockRequest(new Request({type: 'choose'})); // no value like canceled dialog
+        app.choose('Pick one...', ['chicken', 'beef', 'tofu'], function (choice) {
+          if (undefined === choice)
+            callback('The End');
+          else
+            callback(choice);
+        });
+      };
+      /**
+       * Launch test
+       */
+      ok1();
+    });
 
-});
+  });
+  if (new SurrogateInterface().description == 'a REPLInterface') {
+    var wasMuted = spec.mute(false).testsCreated;
+    spec.example('interface tests applied', true, function () {
+      this.log('Tests Muted: ' + wasMuted);
+      return wasMuted > 0;
+    });
+  }
+};
 
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/tgi-core-list.test.js
@@ -1262,10 +1446,8 @@ spec.test('tgi-core/lib/tgi-core-list.spec.js', 'List', 'of items', function (ca
         actors.moveFirst();
         test.shouldBeTrue(actors.get('name') == 'Jack Nicholson');
         actors.moveNext();
-        test.log(actors.get('name'));
         test.shouldBeTrue(actors.get('name') == 'Meryl Streep');
         actors.moveLast();
-        test.log(actors.get('name'));
         test.shouldBeTrue(actors.get('name') == 'Renée Zellweger');
 
         // Sort the list
@@ -1284,7 +1466,7 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
   spec.example('Test variations on getList method.', spec.asyncResults(true), function (callback) {
     var test = this;
     var storeBeingTested = new SurrogateStore();
-    test.log(storeBeingTested);
+    test.log('storeBeingTested: ' + storeBeingTested);
 
     // Create list of actors
     test.actorsInfo = [
@@ -1323,7 +1505,7 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
     test.Actor.prototype = inheritPrototype(Model.prototype);
     test.actor = new test.Actor(); // instance to use for stuff
 
-    // Make sure store starts in known state.  Stores such as JSONFileStore will retain test values.
+    // Make sure store starts in known state.  Stores such as mongoStore will retain test values.
     // So... use getList to get all Actors then delete them from the Store
     test.list = new List(new test.Actor());
     test.oldActorsKilled = 0;
@@ -1339,29 +1521,27 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
           storeActors();
         else {
           test.oldActorsFound = list._items.length;
+          var testakill = function (model, error) {
+            if (++test.oldActorsKilled >= test.oldActorsFound) {
+              storeActors();
+            }
+          };
           for (var i = 0; i < list._items.length; i++) {
             test.killhim.set('id', list._items[i][0]);
-            // jshint ignore:start
-            storeBeingTested.deleteModel(test.killhim, function (model, error) {
-              if (++test.oldActorsKilled >= test.oldActorsFound) {
-                storeActors();
-              }
-            })
-            // jshint ignore:end
+            storeBeingTested.deleteModel(test.killhim, testakill);
           }
         }
       });
     }
     catch (err) {
       callback(err);
-      return;
     }
 
     // Callback after model cleaned
     // now, build List and add to store
     function storeActors() {
       test.actorsStored = 0;
-      for (var i=0; i<test.actorsInfo.length; i++) {
+      for (var i = 0; i < test.actorsInfo.length; i++) {
         test.actor.set('ID', null);
         test.actor.set('name', test.actorsInfo[i][0]);
         test.actor.set('born', test.actorsInfo[i][1]);
@@ -1389,13 +1569,12 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
             callback(error);
             return;
           }
-          test.shouldBeTrue(list._items.length == 20,'20');
+          test.shouldBeTrue(list._items.length == 20, '20');
           getTomHanks();
         });
       }
       catch (err) {
         callback(err);
-        return;
       }
     }
 
@@ -1407,13 +1586,12 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
             callback(error);
             return;
           }
-          test.shouldBeTrue(list._items.length == 1,('1 not ' + list._items.length));
+          test.shouldBeTrue(list._items.length == 1, ('1 not ' + list._items.length));
           getD();
         });
       }
       catch (err) {
         callback(err);
-        return;
       }
     }
 
@@ -1426,13 +1604,12 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
             callback(error);
             return;
           }
-          test.shouldBeTrue(list._items.length == 3,('3 not ' + list._items.length));
+          test.shouldBeTrue(list._items.length == 3, ('3 not ' + list._items.length));
           getRZ();
         });
       }
       catch (err) {
         callback(err);
-        return;
       }
     }
 
@@ -1445,14 +1622,13 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
             callback(error);
             return;
           }
-          test.shouldBeTrue(list._items.length == 1,('1 not ' + list._items.length));
-          //list._items.length && test.shouldBeTrue(list.get('name') == 'Renée Zellweger','rz');
+          test.shouldBeTrue(list._items.length == 1, ('1 not ' + list._items.length));
+          test.shouldBeTrue(list.get('name') == 'Renée Zellweger', 'rz');
           getAlphabetical();
         });
       }
       catch (err) {
         callback(err);
-        return;
       }
     }
 
@@ -1460,24 +1636,23 @@ spec.runnerListStoreIntegration = function (SurrogateStore) {
     // test order parameter
     function getAlphabetical() {
       try {
-        storeBeingTested.getList(test.list, {}, { name: 1 }, function (list, error) {
+        storeBeingTested.getList(test.list, {}, {name: 1}, function (list, error) {
           if (typeof error != 'undefined') {
             callback(error);
             return;
           }
           // Verify each move returns true when move succeeds
-          test.shouldBeTrue(list.moveFirst(),'moveFirst');
-          test.shouldBeTrue(!list.movePrevious(),'movePrevious');
-          test.shouldBeTrue(list.get('name') == 'Al Pacino','AP');
-          test.shouldBeTrue(list.moveLast(),'moveLast');
-          test.shouldBeTrue(!list.moveNext(),'moveNext');
-          test.shouldBeTrue(list.get('name') == 'Tom Hanks','TH');
+          test.shouldBeTrue(list.moveFirst(), 'moveFirst');
+          test.shouldBeTrue(!list.movePrevious(), 'movePrevious');
+          test.shouldBeTrue(list.get('name') == 'Al Pacino', 'AP');
+          test.shouldBeTrue(list.moveLast(), 'moveLast');
+          test.shouldBeTrue(!list.moveNext(), 'moveNext');
+          test.shouldBeTrue(list.get('name') == 'Tom Hanks', 'TH');
           callback(true);
         });
       }
       catch (err) {
         callback(err);
-        return;
       }
     }
   });
@@ -1896,7 +2071,7 @@ spec.test('tgi-core/lib/tgi-core-procedure.spec.js', 'Procedure', 'manages set o
         cmd.bucket = 'abc';
         cmd.execute();
       });
-      spec.xexample('async tasks are designated when requires is set to null', spec.asyncResults('eenie meenie miney mo'), function (callback) {
+      spec.example('async tasks are designated when requires is set to null', spec.asyncResults('eenie meenie miney mo'), function (callback) {
         var cmd = new Command({name: 'cmdProcedure', type: 'Procedure', contents: new Procedure({tasks: [
           {
             command: new Command({
@@ -2293,7 +2468,7 @@ spec.runnerStoreMethods = function (SurrogateStore) {
         self.oldStoogesFound = 0;
         self.oldStoogesKilled = 0;
 
-        // Make sure store starts in known state.  Stores such as JSONFileStore will retain test values.
+        // Make sure store starts in known state.  Stores such as mongoStore will retain test values.
         // So... use getList to get all stooges then delete them from the Store
         var useListToCleanStart = spec.integrationStore.getServices().canGetList;
         if (useListToCleanStart) {
@@ -2433,7 +2608,7 @@ spec.runnerStoreMethods = function (SurrogateStore) {
             return;
           }
           // model parameter is what was deleted
-          self.shouldBeTrue(model.get('id') === null,'no id'); // ID is removed
+          self.shouldBeTrue(undefined === model.get('id')); // ID removed
           self.shouldBeTrue(model.get('name') == 'Curly'); // the rest remains
           // Is it really dead?
           var curly = new self.Stooge();
@@ -2480,9 +2655,6 @@ spec.runnerStoreMethods = function (SurrogateStore) {
           self.shouldBeTrue(list.get('name') == 'Larry','larry');
           list.moveNext();
           self.shouldBeTrue(list.get('name') == 'Moe','moe');
-//          self.shouldBeTrue(false,'WHAT'); // temp
-//          self.shouldBeTrue(true,'THE'); // temp
-//          self.shouldBeTrue(false,'FUCK'); // temp
           callback(true);
         }
       });
@@ -2494,17 +2666,14 @@ spec.runnerStoreMethods = function (SurrogateStore) {
  * tgi-core/lib/tgi-core-transport.spec.js
  */
 spec.test('tgi-core/lib/tgi-core-transport.spec.js', 'Transport', 'messages between client and host', function (callback) {
-  if (typeof io == 'undefined') {
-    spec.paragraph('test disabled.');
-    return; 
+  if (typeof io == 'undefined') { // todo cleaner testing without spammy errors
+    spec.paragraph('Handle message passing between host and UI.');
+    spec.paragraph('TODO: run these tests in node-make-spec-md with io defined');
+    spec.paragraph('Read the source until then...');
+    spec.paragraph('https://github.com/tgi-io/tgi-core/blob/master/lib/core/tgi-core-transport.spec.js');
+    return;
   }
-  //todo repatch into a test that runs 
   spec.heading('Transport Class', function () {
-//    if (typeof io == 'undefined') {
-    //spec.examplesDisabled = true;
-    spec.paragraph('tests disabled socket.io too spammy in console');
-//      spec.paragraph('tests disabled socket.io not detected');
-//    }
     spec.paragraph('Handle message passing between host and UI.');
     spec.heading('CONSTRUCTOR', function () {
       spec.example('objects created should be an instance of Transport', true, function () {
@@ -2575,6 +2744,160 @@ spec.test('tgi-core/lib/tgi-core-transport.spec.js', 'Transport', 'messages betw
 });
 
 /**---------------------------------------------------------------------------------------------------------------------
+ * lib/interfaces/tgi-core-interfaces-repl.spec.js
+ */
+
+spec.testSection('Interfaces');
+spec.test('tgi-core/lib/interfaces/tgi-core-interfaces-repl.spec.js', 'REPLInterface', 'Read Evaluate Print Loop Interface', function (callback) {
+  spec.heading('REPLInterface', function () {
+    spec.paragraph('The REPLInterface is a Read Evaluate Print Loop Interface.');
+    spec.heading('CONSTRUCTOR', function () {
+      spec.runnerInterfaceConstructor(REPLInterface);
+    });
+    spec.runnerInterfaceMethods(REPLInterface);
+    spec.heading('METHODS', function () {
+      spec.paragraph('The REPLInterface defines adds the following methods.');
+      spec.paragraph('evaluateInput(line)');
+      spec.example('called when line of input available', 'function', function () {
+        return typeof REPLInterface.prototype.evaluateInput;
+      });
+      spec.example('if no input state error generated', undefined, function () {
+      });
+      spec.paragraph('captureOutput(callback)');
+      spec.example('called when line of input available', 'function', function () {
+        return typeof REPLInterface.prototype.captureOutput;
+      });
+    });
+    spec.heading('INTEGRATION', function () {
+      spec.example('user queries', spec.asyncResults('done'), function (callback) {
+        var repl = new REPLInterface();
+        var app = new Application({interface: repl});
+        var ex = this;
+        repl.captureOutput(function (text) {
+          ex.log('out> ' + text);
+          //console.log('out> ' + text);
+        });
+        repl.evaluateInput('input ignored if no context for it');
+        var input = function (text) {
+          ex.log('in> ' + text);
+          //console.log('in> ' + text);
+          repl.evaluateInput(text);
+        };
+        /**
+         * test per function
+         */
+        var ok1 = function () {
+          app.ok('This is a test.', function () {
+            yesno1();
+          });
+          input('whatever');
+        };
+        var yesno1 = function () {
+          app.yesno('Are we having fun?', function (answer) {
+            if (answer) {
+              callback(answer);
+            } else {
+              yesno2();
+            }
+          });
+          input('hell no');
+        };
+        var yesno2 = function () {
+          app.yesno('Should I continue?', function (answer) {
+            if (answer) {
+              ask1();
+            } else {
+              callback(answer);
+            }
+          });
+          input('y');
+        };
+        var ask1 = function () {
+          app.ask('What is your name?', new Attribute({name: 'Name'}), function (answer) {
+            repl.info('Nice to meet you ' + answer + '.');
+            if (answer == 'Sean') {
+              choose1();
+            } else {
+              callback(answer);
+            }
+          });
+          input('Sean');
+        };
+        var choose1 = function () {
+          app.choose('Pick one...', ['Eenie', 'Meenie', 'Miney', 'Moe'], function (choice) {
+            if (choice == 1)
+              callback('done');
+            else
+              callback(choice);
+          });
+          input('m'); // first partial match
+        };
+        /**
+         * Start the first test
+         */
+        ok1();
+      });
+      spec.example('app navigation', spec.asyncResults('RockPaperScissors'), function (callback) {
+        var repl = new REPLInterface();
+        var app = new Application({interface: repl});
+        var ex = this;
+        repl.captureOutput(function (text) {
+          ex.log('out> ' + text);
+          //console.log('out> ' + text);
+        });
+        var input = function (text) {
+          ex.log('in> ' + text);
+          //console.log('in> ' + text);
+          repl.evaluateInput(text);
+        };
+
+        var answer = '';
+        var rockCommand = new Command({
+          name: 'Rock', type: 'Function', contents: function () {
+            answer += 'Rock';
+          }
+        });
+        var paperCommand = new Command({
+          name: 'Paper', type: 'Function', contents: function () {
+            answer += 'Paper';
+          }
+        });
+        var scissorsCommand = new Command({
+          name: 'Scissors', type: 'Function', contents: function () {
+            answer += 'Scissors';
+          }
+        });
+        var seeYouCommand = new Command({
+          name: 'SeeYou', type: 'Function', contents: function () {
+            callback(answer);
+          }
+        });
+        var menu = new Presentation();
+        menu.set('name', 'Public Menu');
+        menu.set('contents', [
+          'Strings are ignored',
+          new Attribute({name: 'ignoredAlso'}),
+          rockCommand,
+          paperCommand,
+          scissorsCommand,
+          seeYouCommand
+        ]);
+        app.setPresentation(menu);
+        app.start(function () {
+          ex.log('app got stuff: ' + JSON.stringify(stuff));
+          //console.log('app got stuff: ' + JSON.stringify(stuff));
+        });
+        input('Rockaby');
+        input('r');
+        input('p');
+        input('s');
+        input('se');
+      });
+    });
+  });
+});
+
+/**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/models/tgi-core-model-application.test.js
  */
 spec.testSection('Models');
@@ -2583,16 +2906,16 @@ spec.test('tgi-core/lib/models/tgi-core-model-application.spec.js', 'Application
     spec.example('objects created should be an instance of Application', true, function () {
       return new Application() instanceof Application;
     });
-    //spec.mute(true);
     spec.testModel(Application);
-    //var wasMuted = spec.mute(false).testsCreated;
-    //spec.example('model tests applied', true, function () {
-    //  this.log('Tests Muted: ' + wasMuted);
-    //  return wasMuted > 0;
-    //});
+    spec.example('argument property interface will invoke setInterface method', true, function () {
+      var myInterface = new Interface();
+      var myApplication = new Application({interface: myInterface});
+      return (myApplication.getInterface() === myInterface);
+    });
+
   });
   spec.heading('ATTRIBUTES', function () {
-    spec.paragraph('Application extends model and inherits the attributes property.  All Presentation objects ' +
+    spec.paragraph('Application extends model and inherits the attributes property.  All Application objects ' +
     'have the following attributes:');
     spec.example('following attributes are defined:', undefined, function () {
       var presentation = new Application(); // default attributes and values
@@ -2643,9 +2966,7 @@ spec.test('tgi-core/lib/models/tgi-core-model-application.spec.js', 'Application
         new Application().start();
       });
       spec.example('callback parameter required', Error('callBack required'), function () {
-        var app = new Application();
-        app.setInterface(new Interface());
-        app.start();
+        new Application({interface: new Interface()}).start();
       });
     });
     spec.heading('dispatch()', function () {
@@ -2654,27 +2975,109 @@ spec.test('tgi-core/lib/models/tgi-core-model-application.spec.js', 'Application
         new Application().dispatch();
       });
       spec.example('send command without callback when no response needed', undefined, function () {
-        new Application().dispatch(new Request({type: 'Command', command: new Command()}));
+        var ex = this;
+        new Application().dispatch(new Request({
+          type: 'Command', command: new Command(function () {
+            ex.log('PEACE');
+          })
+        }));
       });
       spec.example('optional second parameter is the response callback', Error('response callback is not a function'), function () {
         new Application().dispatch(new Request({type: 'Command', command: new Command()}), true);
       });
     });
+    spec.heading('ok(prompt, callBack)', function () {
+      spec.paragraph('Pause before proceeding');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().ok();
+      });
+      spec.example('must provide the text prompt param', Error('prompt required'), function () {
+        new Application({interface: new Interface()}).ok();
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        new Application({interface: new Interface()}).ok('You are about to enter the twilight zone.');
+      });
+    });
+    spec.heading('yesno(prompt, callBack)', function () {
+      spec.paragraph('Query user with a yes no question.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().yesno();
+      });
+      spec.example('must provide the text question param', Error('prompt required'), function () {
+        new Application({interface: new Interface()}).yesno();
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        new Application({interface: new Interface()}).yesno('ok?');
+      });
+    });
+    spec.heading('ask(prompt, attribute, callBack)', function () {
+      spec.paragraph('Simple single item prompt.');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().ask();
+      });
+      spec.example('must provide the text question param', Error('prompt required'), function () {
+        new Application({interface: new Interface()}).ask();
+      });
+      spec.example('must supply attribute', Error('instance of Attribute a required parameter'), function () {
+        new Application({interface: new Interface()}).ask('sup');
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        new Application({interface: new Interface()}).
+          ask('Please enter your name', new Attribute({name: 'Name'}));
+      });
+    });
+    spec.heading('choose', function () {
+      spec.paragraph('prompt to choose an item');
+      spec.example('must set interface before invoking', Error('interface not set'), function () {
+        new Application().choose();
+      });
+      spec.example('must provide text prompt first', Error('prompt required'), function () {
+        new Application({interface: new Interface()}).choose();
+      });
+      spec.example('must supply array of choices', undefined, function () {
+        var myApplication = new Application({interface: new Interface()});
+
+        this.shouldThrowError(Error('choices array required'), function () {
+          myApplication.choose('What it do');
+        });
+        this.shouldThrowError(Error('choices array required'), function () {
+          myApplication.choose('this will not', 'work');
+        });
+        this.shouldThrowError(Error('choices array empty'), function () {
+          myApplication.choose('empty array?', []);
+        });
+      });
+      spec.example('must provide callback param', Error('callBack required'), function () {
+        var myApplication = new Application();
+        myApplication.setInterface(new Interface());
+        myApplication.choose('choose wisely', ['rock', 'paper', 'scissors']);
+      });
+    });
   });
   spec.heading('Application Integration', function () {
-    spec.xexample('little app with command execution mocking', spec.asyncResults(true), function (callback) {
-
+    spec.example('minimal app', spec.asyncResults('hello world'), function (callback) {
+      // Here is our app
+      var ui = new Interface();
+      var app = new Application();
+      app.setInterface(ui);
+      app.start(console.log);
+      // define command to satisfy test
+      var helloWorldCommand = new Command(function () {
+        callback('hello world');
+      });
+      // mock ui command request - this will get executed by app directly
+      ui.mockRequest(new Request({type: 'Command', command: helloWorldCommand}));
+    });
+    spec.example('little app with command execution mocking', spec.asyncResults(true), function (callback) {
+      // todo delamify this
       // Send 4 mocks and make sure we get 4 callback calls
       var self = this;
       self.callbackCount = 0;
-
       var app = new Application();
       var testInterface = new Interface();
       var testPresentation = new Presentation();
-
       app.setInterface(testInterface);
       app.setPresentation(testPresentation);
-
       app.start(function (request) {
         if (request.type == 'mock count')
           self.callbackCount++;
@@ -2689,8 +3092,8 @@ spec.test('tgi-core/lib/models/tgi-core-model-application.spec.js', 'Application
       testInterface.mockRequest(cmds);
     });
   });
-
 });
+
 
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/models/tgi-core-model-log.test.js
@@ -2986,6 +3389,152 @@ spec.test('tgi-core/lib/stores/tgi-core-store-memory.spec.js', 'MemoryStore', 'v
     });
     spec.heading('Store tests are applied', function () {
       spec.runnerStoreMethods(MemoryStore);
+    });
+  });
+});
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/utility/tgi-core-arrays.spec.js
+ */
+spec.testSection('Utility Functions');
+spec.test('tgi-utility/lib/tgi-utility-arrays.test.js', 'Array Functions', 'description', function (callback) {
+  callback({log: 'tgi-utility/lib/tgi-utility-arrays.test.js'});
+  spec.heading('ARRAY FUNCTIONS', function () {
+    spec.heading('contains(array,object)', function () {
+      spec.paragraph('This method returns true or false as to whether object is contained in array.');
+      spec.example('object exists in array', true, function () {
+        return contains(['moe', 'larry', 'curley'], 'larry');
+      });
+      spec.example('object does not exist in array', false, function () {
+        return contains(['moe', 'larry', 'curley'], 'shemp');
+      });
+    });
+  });
+});
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/utility/tgi-core-objects.spec.js
+ */
+spec.test('tgi-utility/lib/tgi-utility-objects.test.js', 'Object Functions', 'description', function (callback) {
+  spec.heading('inheritPrototype(p)', function () {
+    spec.paragraph('kinda sorta class like');
+    spec.example('Cannot pass null', undefined, function () {
+      this.shouldThrowError('*', function () {
+        inheritPrototype(null);
+      });
+    });
+    spec.example('quack like a duck', 'quack', function () {
+      // Duck class
+      var Duck = function () {
+      };
+      // Duck method
+      Duck.prototype.sound = function () {
+        return 'quack';
+      };
+      // Mallard class
+      var Mallard = function () {
+      };
+      // Mallard inherits Duck prototype
+      Mallard.prototype = inheritPrototype(Duck.prototype);
+      // Create instance
+      var daffy = new Mallard();
+
+      // Instance of constructor & the inherited prototype's class fir daffy
+      this.shouldBeTrue(daffy instanceof Mallard);
+      this.shouldBeTrue(daffy instanceof Duck);
+
+      // What sound does daffy make?
+      return daffy.sound();
+    });
+  });
+  spec.heading('getInvalidProperties(args,allowedProperties)', function () {
+    spec.paragraph('Functions that take an object as it\'s parameter use this to validate the ' +
+    'properties of the parameter by returning any invalid properties');
+    spec.example('valid property', 'Kahn', function () {
+      // got Kahn and value backwards so Kahn is an unknown property
+      return getInvalidProperties({name: 'name', Kahn: 'value'}, ['name', 'value'])[0];
+    });
+    spec.example('invalid property', 0, function () {
+      // no unknown properties
+      return getInvalidProperties({name: 'name', value: 'Kahn'}, ['name', 'value']).length;
+    });
+  });
+});
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/utility/tgi-core-strings.spec.js
+ */
+
+spec.test('tgi-utility/lib/tgi-utility-strings.test.js', 'String Functions', 'description', function (callback) {
+  spec.heading('STRING FUNCTIONS', function () {
+    spec.heading('trim(string)', function () {
+      spec.example('Remove leading and trailing spaces from string', '(hello)', function () {
+        return '(' + trim(' hello ') + ')';
+      });
+    });
+    spec.heading('ltrim(string)', function () {
+      spec.example('Remove leading spaces from string', '(hello )', function () {
+        return '(' + ltrim(' hello ') + ')';
+      });
+    });
+    spec.heading('rtrim(string)', function () {
+      spec.example('Remove trailing spaces from string', '( hello)', function () {
+        return '(' + rtrim(' hello ') + ')';
+      });
+    });
+    spec.heading('left(string)', function () {
+      spec.example('return left part of string', '123', function () {
+        return left('12345',3);
+      });
+    });
+    spec.heading('right(string)', function () {
+      spec.example('return right part of string', '345', function () {
+        return right('12345',3);
+      });
+    });
+    spec.heading('center(string)', function () {
+      spec.example('return center part of string', '234', function () {
+        return center('12345',3);
+      });
+    });
+    spec.heading('lpad(string, length, fillChar)', function () {
+      spec.paragraph('Return string size length with fillChar padded on left.  ' +
+      'fillChar is optional and defaults to space.');
+      spec.example('add leading asteriks', '********42', function () {
+        return lpad('42', 10, '*');
+      });
+      spec.example('truncate when length is less than string length', 'ok', function () {
+        return lpad('okay', 2);
+      });
+      spec.example('fillChar defaults to space', ': x:', function () {
+        return ':' + lpad('x',2) + ':';
+      });
+    });
+    spec.heading('rpad(string, length, fillChar)', function () {
+      spec.paragraph('Return string size length with fillChar padded on right.  ' +
+      'fillChar is optional and defaults to space.');
+      spec.example('Add trailing periods', 'etc...', function () {
+        return rpad('etc', 6, '.');
+      });
+      spec.example('truncate when length is less than string length', 'sup', function () {
+        return rpad('wassup', 3);
+      });
+      spec.example('fillChar defaults to space', ':x :', function () {
+        return ':' + rpad('x',2) + ':';
+      });
+    });
+    spec.heading('cpad(string, length, fillChar)', function () {
+      spec.paragraph('Return string size length with fillChar padded on left and right.  ' +
+      'fillChar is optional and defaults to space.');
+      spec.example('center with periods', '...center....', function () {
+        return cpad('center', 13, '.');
+      });
+      spec.example('truncate when length is less than string length', 'cd', function () {
+        return cpad('abcdef', 2);
+      });
+      spec.example('fillChar defaults to space', ': x :', function () {
+        return ':' + cpad('x',3) + ':';
+      });
     });
   });
 });

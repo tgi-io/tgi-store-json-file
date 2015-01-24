@@ -5,99 +5,45 @@
 "use strict";
 var root = this;
 /**---------------------------------------------------------------------------------------------------------------------
- * tgi-store-json-file/lib/tgi-store-json-file.lib.js
- */
-var JSONFILE = function () {
-  return {
-    version: '0.0.7',
-    Application: Application,
-    Attribute: Attribute,
-    Command: Command,
-    Delta: Delta,
-    Interface: Interface,
-    List: List,
-    Log: Log,
-    MemoryStore: MemoryStore,
-    Message: Message,
-    Model: Model,
-    Presentation: Presentation,
-    Procedure: Procedure,
-    Request: Request,
-    Session: Session,
-    Store: Store,
-    Transport: Transport,
-    User: User,
-    Workspace: Workspace,
-    JSONFileStore: JSONFileStore,
-    injectMethods: function (that) {
-      that.Application = Application;
-      that.Attribute = Attribute;
-      that.Command = Command;
-      that.Delta = Delta;
-      that.Interface = Interface;
-      that.List = List;
-      that.Log = Log;
-      that.MemoryStore = MemoryStore;
-      that.Message = Message;
-      that.Model = Model;
-      that.Presentation = Presentation;
-      that.Procedure = Procedure;
-      that.Request = Request;
-      that.Store = Store;
-      that.Session = Session;
-      that.Transport = Transport;
-      that.User = User;
-      that.Workspace = Workspace;
-      that.JSONFileStore = JSONFileStore;
-    }
-  };
-};
-
-/**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/core/tgi-core.js
+ * tgi-core/lib/tgi-core.source.js
  **/
-var CORE = function () {
-  return {
-    version: '0.0.7',
-    Application: Application,
-    Attribute: Attribute,
-    Command: Command,
-    Delta: Delta,
-    Interface: Interface,
-    List: List,
-    Log: Log,
-    MemoryStore: MemoryStore,
-    Message: Message,
-    Model: Model,
-    Presentation: Presentation,
-    Procedure: Procedure,
-    Request: Request,
-    Session: Session,
-    Store: Store,
-    Transport: Transport,
-    User: User,
-    Workspace: Workspace,
-    injectMethods: function (that) {
-      that.Application = Application;
-      that.Attribute = Attribute;
-      that.Command = Command;
-      that.Delta = Delta;
-      that.Interface = Interface;
-      that.List = List;
-      that.Log = Log;
-      that.MemoryStore = MemoryStore;
-      that.Message = Message;
-      that.Model = Model;
-      that.Presentation = Presentation;
-      that.Procedure = Procedure;
-      that.Request = Request;
-      that.Store = Store;
-      that.Session = Session;
-      that.Transport = Transport;
-      that.User = User;
-      that.Workspace = Workspace;
-    }
-  };
+var TGI = {
+  CORE: function () {
+    return {
+      version: '0.0.28',
+      Application: Application,
+      Attribute: Attribute,
+      Command: Command,
+      Delta: Delta,
+      Interface: Interface,
+      List: List,
+      Log: Log,
+      MemoryStore: MemoryStore,
+      Message: Message,
+      Model: Model,
+      Presentation: Presentation,
+      Procedure: Procedure,
+      REPLInterface: REPLInterface,
+      Request: Request,
+      Session: Session,
+      Store: Store,
+      Transport: Transport,
+      User: User,
+      Workspace: Workspace,
+      inheritPrototype: inheritPrototype,
+      getInvalidProperties: getInvalidProperties,
+      trim: trim,
+      ltrim: ltrim,
+      rtrim: rtrim,
+      left: left,
+      center: center,
+      right: right,
+      lpad: lpad,
+      rpad: rpad,
+      cpad: cpad,
+      contains: contains
+    };
+  }
 };
 
 /**---------------------------------------------------------------------------------------------------------------------
@@ -717,15 +663,59 @@ Interface.prototype.toString = function () {
   return this.description;
 };
 Interface.prototype.canMock = function () {
-  return false;
+  return true;
 };
 Interface.prototype.doMock = function () {
+  var callBack;
   // If no more elements then we are done
   this.mockPending = false;
   if (this.mocks.length < 1)
     return;
   // Get oldest ele and pass to callback if it is set
   var thisMock = this.mocks.shift();
+  if (thisMock.type == 'ok') {
+    if (this.okCallBack) {
+      callBack = this.okCallBack;
+      delete this.okCallBack;
+      callBack();
+    } else {
+      this.okPending = true;
+    }
+    return;
+  }
+  if (thisMock.type == 'yes' || thisMock.type == 'no') {
+    if (this.yesnoCallBack) {
+      callBack = this.yesnoCallBack;
+      delete this.yesnoCallBack;
+      callBack(thisMock.type == 'yes');
+    } else {
+      this.yesnoPending = true;
+      this.yesnoResponse = (thisMock.type == 'yes');
+    }
+    return;
+  }
+  if (thisMock.type == 'ask') {
+    if (this.askCallBack) {
+      callBack = this.askCallBack;
+      delete this.askCallBack;
+      callBack(thisMock.value);
+    } else {
+      this.askPending = true;
+      this.askResponse = thisMock.value;
+    }
+    return;
+  }
+  if (thisMock.type == 'choose') {
+    if (this.chooseCallBack) {
+      callBack = this.chooseCallBack;
+      delete this.chooseCallBack;
+      callBack(Interface.firstMatch(thisMock.value, this.chooseChoices));
+    } else {
+      this.choosePending = true;
+      this.chooseResponse = thisMock.value;
+    }
+    return;
+  }
   this.dispatch(thisMock);
   // Invoke for next element (delayed execution)
   this.mockPending = true;
@@ -770,14 +760,73 @@ Interface.prototype.dispatch = function (request, response) {
     }
   }
 };
-Interface.prototype.notify = function (request) {
-  if (false === (request instanceof Request)) throw new Error('Request required');
+Interface.prototype.notify = function (message) {
+  if (false === (message instanceof Message)) throw new Error('Message required');
 };
 Interface.prototype.render = function (presentation, callBack) {
   if (false === (presentation instanceof Presentation)) throw new Error('Presentation object required');
   if (callBack && typeof callBack != 'function') throw new Error('optional second argument must a commandRequest callback function');
 };
-
+Interface.prototype.info = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+};
+Interface.prototype.ok = function (prompt, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.okPending) {
+    delete this.okPending;
+    callBack();
+  } else {
+    this.okCallBack = callBack;
+  }
+};
+Interface.prototype.yesno = function (prompt, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.yesnoPending) {
+    delete this.yesnoPending;
+    callBack(this.yesnoResponse);
+  } else {
+    this.yesnoCallBack = callBack;
+  }
+};
+Interface.prototype.ask = function (prompt, attribute, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (attribute instanceof Attribute)) throw new Error('instance of Attribute a required parameter');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.askPending) {
+    delete this.askPending;
+    callBack(this.askResponse);
+  } else {
+    this.askCallBack = callBack;
+  }
+};
+Interface.prototype.choose = function (prompt, choices, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (choices instanceof Array)) throw new Error('choices array required');
+  if (!choices.length) throw new Error('choices array empty');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.choosePending) {
+    delete this.choosePending;
+    callBack(Interface.firstMatch(this.chooseResponse, choices));
+  } else {
+    this.chooseCallBack = callBack;
+    this.chooseChoices = choices;
+  }
+};
+/**
+ * Helper Functions
+ */
+Interface.firstMatch = function (s, a) { // find first partial match with s in array a
+  if (undefined === s)
+  return undefined;
+  for (var i = 0; i < a.length; i++) {
+    var obj = a[i].toLowerCase();
+    if (left(obj, s.length) == s.toLowerCase())
+      return i;
+  }
+  return undefined;
+};
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/tgi-core-list.source.js
  */
@@ -1184,6 +1233,8 @@ function Request(args) {
   }
   args = args || {};
   this.type = args.type || null;
+  if (args.value) // todo spec as optional param
+    this.value = args.value;
   if (!this.type || typeof this.type != 'string') throw new Error('Request type required');
   switch (this.type) {
     case 'Command':
@@ -1272,44 +1323,66 @@ function Transport(location, callBack) {
   self.connected = false;
   self.initialConnect = true;
   self.location = location;
-  if (self.location==='') self.location='http host';
-  self.socket = io.connect(location);
+  if (self.location === '') self.location = 'http host';
+  self.socket = io.connect(location, {reconnection: false});
   self.socket.on('connect', function () {
     self.connected = true;
     self.initialConnect = false;
-    console.log('socket.io ('+self.location+') connected');
+    console.log('socket.io (' + self.location + ') connected');
     callBack.call(self, new Message('Connected', ''));
   });
   self.socket.on('connecting', function () {
-    console.log('socket.io ('+self.location+') connecting');
+    console.log('socket.io (' + self.location + ') connecting');
   });
   self.socket.on('error', function (reason) {
-    var theReason = reason;
-    if (theReason.length < 1) theReason = "(unknown)";
-    console.error('socket.io ('+self.location+') error: ' + theReason + '.');
+    var theError = 'general error with ' + self.location + (reason ? ', reason ' + reason : '');
+    console.error(theError);
     // If have not ever connected then signal error
     if (self.initialConnect) {
-      callBack.call(self, new Message('Error', 'cannot connect'));
+      callBack.call(self, new Message('Error', theError));
+    }
+  });
+  self.socket.on('connect_error', function (reason) {
+    var theError = 'connect error with ' + self.location + (reason ? ', reason ' + reason : '');
+    console.error(theError);
+    // If have not ever connected then signal error
+    if (self.initialConnect) {
+      callBack.call(self, new Message('Error', theError));
     }
   });
   self.socket.on('connect_failed', function (reason) {
-    var theReason = reason;
-    if (theReason.length < 1) theReason = "(unknown)";
-    console.error('socket.io ('+self.location+') connect_failed: ' + theReason + '.');
+    var theError = 'connect failed with ' + self.location + (reason ? ', reason ' + reason : '');
+    console.error(theError);
     // If have not ever connected then signal error
     if (self.initialConnect) {
-      callBack.call(self, new Message('Error', 'cannot connect'));
+      callBack.call(self, new Message('Error', theError));
     }
   });
   self.socket.on('message', function (obj) {
-    console.log('socket.io ('+self.location+') message: ' + obj);
+    console.log('socket.io (' + self.location + ') message: ' + obj);
   });
   self.socket.on('disconnect', function (reason) {
     self.connected = false;
-    console.log('socket.io ('+self.location+') disconnect: ' + reason);
+    console.log('socket.io (' + self.location + ') disconnect: ' + reason);
   });
 }
-/*
+/**
+ * pub/sub thingies
+ */
+Transport.messageHandlers = {};
+Transport.setMessageHandler = function (message, handler) {
+  Transport.messageHandlers[message] = handler;
+};
+Transport.hostMessageProcess = function (obj, fn) {
+  if (Transport.messageHandlers[obj.type]) {
+    Transport.messageHandlers[obj.type](obj.contents, fn);
+  } else {
+//          console.log('socket.io ackmessage: ' + JSON.stringify(obj));
+    fn(true); // todo should this be an error?
+  }
+};
+
+/**
  * Methods
  */
 /* istanbul ignore next */
@@ -1337,13 +1410,288 @@ Transport.prototype.close = function () {
   this.socket.disconnect();
 };
 
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/interfaces/tgi-core-interfaces-repl.source.js
+ */
 /**
- * tequila
- * application-model
+ * Constructor
+ */
+var REPLInterface = function (args) {
+  if (false === (this instanceof Interface)) throw new Error('new operator required');
+  args = args || {};
+  args.name = args.name || '(unnamed)';
+  args.description = args.description || 'a REPLInterface';
+  var i;
+  var unusedProperties = getInvalidProperties(args, ['name', 'description']);
+  var errorList = [];
+  for (i = 0; i < unusedProperties.length; i++) errorList.push('invalid property: ' + unusedProperties[i]);
+  if (errorList.length > 1)
+    throw new Error('error creating Procedure: multiple errors');
+  if (errorList.length) throw new Error('error creating Procedure: ' + errorList[0]);
+  // default state
+  this.startCallback = null;
+  this.stopCallback = null;
+  this.mocks = [];
+  this.mockPending = false;
+  // args ok, now copy to object
+  for (i in args) this[i] = args[i];
+};
+REPLInterface.prototype = Object.create(Interface.prototype);
+/**
+ * Methods
+ */
+REPLInterface.prototype.toString = function () {
+  return this.description;
+};
+REPLInterface.prototype.canMock = function () {
+  return true;
+};
+REPLInterface.prototype.doMock = function () {
+  var callBack;
+  // If no more elements then we are done
+  this.mockPending = false;
+  if (this.mocks.length < 1)
+    return;
+  // Get oldest ele and pass to callback if it is set
+  var thisMock = this.mocks.shift();
+  if (thisMock.type == 'ok') {
+    if (this.okCallBack) {
+      callBack = this.okCallBack;
+      delete this.okCallBack;
+      callBack();
+    } else {
+      this.okPending = true;
+    }
+    return;
+  }
+  if (thisMock.type == 'yes' || thisMock.type == 'no') {
+    if (this.yesnoCallBack) {
+      callBack = this.yesnoCallBack;
+      delete this.yesnoCallBack;
+      callBack(thisMock.type == 'yes');
+    } else {
+      this.yesnoPending = true;
+      this.yesnoResponse = (thisMock.type == 'yes');
+    }
+    return;
+  }
+  if (thisMock.type == 'ask') {
+    if (this.askCallBack) {
+      callBack = this.askCallBack;
+      delete this.askCallBack;
+      callBack(thisMock.value);
+    } else {
+      this.askPending = true;
+      this.askResponse = thisMock.value;
+    }
+    return;
+  }
+  if (thisMock.type == 'choose') {
+    if (this.chooseCallBack) {
+      callBack = this.chooseCallBack;
+      delete this.chooseCallBack;
+      callBack(Interface.firstMatch(thisMock.value, this.chooseChoices));
+    } else {
+      this.choosePending = true;
+      this.chooseResponse = thisMock.value;
+    }
+    return;
+  }
+  this.dispatch(thisMock);
+  // Invoke for next element (delayed execution)
+  this.mockPending = true;
+  var self = this;
+  setTimeout(function () {
+    self.doMock();
+  }, 0);
+};
+REPLInterface.prototype.mockRequest = function (args) {
+  if (!(args instanceof Array || args instanceof Request)) throw new Error('missing request parameter');
+  if (!(args instanceof Array)) args = [args]; // coerce to array
+  var i;
+  for (i = 0; i < args.length; i++) {
+    if (false === (args[i] instanceof Request)) throw new Error('invalid request parameter');
+  }
+  // All good stack them
+  for (i = 0; i < args.length; i++) {
+    this.mocks.push(args[i]);
+  }
+  // If mock is not pending then start it
+  if (!this.mockPending) {
+    this.doMock();
+  }
+};
+REPLInterface.prototype.start = function (application, presentation, callBack) {
+  if (!(application instanceof Application)) throw new Error('Application required');
+  if (!(presentation instanceof Presentation)) throw new Error('presentation required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  this.application = application;
+  this.presentation = presentation;
+  this.startCallback = callBack;
+};
+REPLInterface.prototype.stop = function (callBack) {
+  if (typeof callBack != 'function') throw new Error('callBack required');
+};
+REPLInterface.prototype.dispatch = function (request, response) {
+  if (false === (request instanceof Request)) throw new Error('Request required');
+  if (response && typeof response != 'function') throw new Error('response callback is not a function');
+  if (!this.application || !this.application.dispatch(request)) {
+    if (this.startCallback) {
+      this.startCallback(request);
+    }
+  }
+};
+REPLInterface.prototype.notify = function (message) {
+  if (false === (message instanceof Message)) throw new Error('Message required');
+  if (this.captureOutputCallback) {
+    this.captureOutputCallback(message);
+  }
+};
+REPLInterface.prototype.render = function (presentation, callBack) {
+  if (false === (presentation instanceof Presentation)) throw new Error('Presentation object required');
+  if (callBack && typeof callBack != 'function') throw new Error('optional second argument must a commandRequest callback function');
+};
+REPLInterface.prototype.info = function (text) {
+  if (!text || typeof text !== 'string') throw new Error('text required');
+  if (this.captureOutputCallback) {
+    this.captureOutputCallback(text);
+  }
+};
+
+REPLInterface.prototype.ok = function (prompt, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.captureOutputCallback) {
+    this.captureOutputCallback(prompt);
+  }
+  if (this.okPending) {
+    delete this.okPending;
+    callBack();
+  } else {
+    this.okCallBack = callBack;
+  }
+};
+REPLInterface.prototype.yesno = function (prompt, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.captureOutputCallback) {
+    this.captureOutputCallback(prompt);
+  }
+  if (this.yesnoPending) {
+    delete this.yesnoPending;
+    callBack(this.yesnoResponse);
+  } else {
+    this.yesnoCallBack = callBack;
+  }
+};
+REPLInterface.prototype.ask = function (prompt, attribute, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (attribute instanceof Attribute)) throw new Error('instance of Attribute a required parameter');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.captureOutputCallback) {
+    this.captureOutputCallback(prompt);
+  }
+  if (this.askPending) {
+    delete this.askPending;
+    callBack(this.askResponse);
+  } else {
+    this.askCallBack = callBack;
+  }
+};
+REPLInterface.prototype.choose = function (prompt, choices, callBack) {
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (choices instanceof Array)) throw new Error('choices array required');
+  if (!choices.length) throw new Error('choices array empty');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  if (this.captureOutputCallback) {
+    this.captureOutputCallback(prompt);
+    for (var i = 0; i < choices.length; i++) {
+      this.captureOutputCallback('  ' + choices[i]);
+    }
+  }
+  if (this.choosePending) {
+    delete this.choosePending;
+    callBack(Interface.firstMatch(this.chooseResponse, choices));
+  } else {
+    this.chooseCallBack = callBack;
+    this.chooseChoices = choices;
+  }
+};
+/**
+ * Additional Methods
+ */
+REPLInterface.prototype.evaluateInput = function (line) {
+  var callBack;
+  var uLine = ('' + line).toUpperCase();
+  /**
+   * First priority for input capture - user queries
+   */
+  if (this.okCallBack) {
+    callBack = this.okCallBack;
+    delete this.okCallBack;
+    callBack();
+    return;
+  }
+  if (this.yesnoCallBack) {
+    callBack = this.yesnoCallBack;
+    delete this.yesnoCallBack;
+    callBack(uLine == 'Y' || uLine == 'YES');
+    return;
+  }
+  if (this.askCallBack) {
+    callBack = this.askCallBack;
+    delete this.askCallBack;
+    callBack(line);
+    return;
+  }
+  if (this.chooseCallBack) {
+    callBack = this.chooseCallBack;
+    delete this.chooseCallBack;
+    callBack(Interface.firstMatch(line, this.chooseChoices));
+    return;
+  }
+  /**
+   * Do we have a primary navigation?
+   */
+  if (this.presentation && line.length) {
+    var menu = this.presentation.get('contents');
+    var commands = '';
+    for (var i = 0; i < menu.length; i++) {
+      var m = menu[i];
+      if (m instanceof Command) {
+        var name = m.name.toUpperCase();
+        if (left(name, uLine.length) == uLine) {
+          m.execute();
+          return;
+        }
+        commands += ( ' ' + m.name );
+      }
+    }
+    if (this.captureOutputCallback) {
+      this.captureOutputCallback('unrecognized: ' + line);
+      this.captureOutputCallback('valid commands: ' + commands);
+    }
+    return;
+  }
+  /**
+   * This should never get this far ...
+   */
+  if (this.captureOutputCallback) this.captureOutputCallback('input ignored: ' + line);
+}
+;
+REPLInterface.prototype.captureOutput = function (callback) {
+  this.captureOutputCallback = callback;
+};
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core-model-application.source.js
  */
 
-// Model Constructor
+/**
+ * Constructor Function
+ */
 var Application = function (args) {
+  var _interface;
   if (false === (this instanceof Application)) throw new Error('new operator required');
   args = args || {};
   if (!args.attributes) {
@@ -1351,13 +1699,18 @@ var Application = function (args) {
   }
   args.attributes.push(new Attribute({name: 'name', type: 'String(20)'}));
   args.attributes.push(new Attribute({name: 'brand', type: 'String'}));
+  if (args.interface) {
+    this.setInterface(args.interface);
+    delete args.interface;
+  }
   Model.call(this, args);
   this.modelType = "Application";
   this.set('name','newApp');
   this.set('brand','NEW APP');
 };
 Application.prototype = Object.create(Model.prototype);
-/*
+
+/**
  * Methods
  */
 Application.prototype.start = function (callBack) {
@@ -1365,7 +1718,8 @@ Application.prototype.start = function (callBack) {
   if (typeof callBack != 'function') throw new Error('callBack required');
   var self = this;
   this.startCallback = callBack;
-  this.primaryInterface.start(self, this.presentation, this.sysPresentation, function (request) {
+  if (!this.presentation) this.presentation = new Presentation();
+  this.primaryInterface.start(self, this.presentation, function (request) {
     if (request.type=='Command') {
       request.command.execute();
     } else {
@@ -1378,9 +1732,15 @@ Application.prototype.start = function (callBack) {
 Application.prototype.dispatch = function (request, response) {
   if (false === (request instanceof Request)) throw new Error('Request required');
   if (response && typeof response != 'function') throw new Error('response callback is not a function');
-  if (this.startCallback) {
-    this.startCallback(request);
+  // commands are handled directly
+  if (request.type == 'Command') {
+    request.command.execute();
     return true;
+  } else {
+    if (this.startCallback) {
+      this.startCallback(request);
+      return true;
+    }
   }
   return false;
 };
@@ -1394,14 +1754,47 @@ Application.prototype.getInterface = function () {
 Application.prototype.setPresentation = function (presentation) {
   if (false === (presentation instanceof Presentation)) throw new Error('instance of Presentation a required parameter');
   this.presentation = presentation;
-  if (this.startCallback) {
-    // Interface started so reload
-    this.primaryInterface.setPresentation(this.presentation);
-  }
+  //if (this.startCallback) { TODO WTF
+  //  // Interface started so reload
+  //  this.primaryInterface.setPresentation(this.presentation);
+  //}
 };
 Application.prototype.getPresentation = function () {
   return this.presentation;
 };
+Application.prototype.info = function (text) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!text || typeof text !== 'string') throw new Error('text parameter required');
+  this.primaryInterface.info(text);
+};
+Application.prototype.ok = function (prompt, callBack) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  this.primaryInterface.ok(prompt, callBack);
+};
+Application.prototype.yesno = function (prompt, callBack) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  this.primaryInterface.yesno(prompt, callBack);
+};
+Application.prototype.ask = function (prompt, attribute, callBack) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (attribute instanceof Attribute)) throw new Error('instance of Attribute a required parameter');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  this.primaryInterface.ask(prompt, attribute, callBack);
+};
+Application.prototype.choose = function (prompt, choices, callBack) {
+  if (false === (this.primaryInterface instanceof Interface)) throw new Error('interface not set');
+  if (!prompt || typeof prompt !== 'string') throw new Error('prompt required');
+  if (false === (choices instanceof Array)) throw new Error('choices array required');
+  if (!choices.length) throw new Error('choices array empty');
+  if (typeof callBack != 'function') throw new Error('callBack required');
+  this.primaryInterface.choose(prompt, choices, callBack);
+};
+
 /**---------------------------------------------------------------------------------------------------------------------
  * tgi-core/lib/models/tgi-core-model-log.source.js
  */
@@ -1880,6 +2273,152 @@ MemoryStore.prototype.getList = function (list, filter, arg3, arg4) {
 };
 
 /**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/utility/tgi-core-arrays.source.js
+ */
+/**
+ * contains(a, obj) returns true if obj is contained in array (a)
+ */
+var contains = function (a, obj) {
+  for (var i = 0; i < a.length; i++) {
+    if (a[i] === obj) return true;
+  }
+  return false;
+};
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/utility/tgi-core-objects.source.js
+ */
+/**
+ * inheritPrototype(p) - inherit prototype p
+ */
+/* istanbul ignore next */
+var inheritPrototype = function (p) {
+  if (p === null) throw new TypeError();
+  if (Object.create) return Object.create(p);
+  var t = typeof p;
+  if (t !== "object" && typeof t !== "function") throw new TypeError();
+  function F() {
+  }
+
+  F.prototype = p;
+  return new F();
+};
+/**
+ * getInvalidProperties(args, allowedProperties) - used in object creation to validate constructor properties
+ */
+var getInvalidProperties = function (args, allowedProperties) {
+  var props = [];
+  for (var property in args) {
+    if (args.hasOwnProperty(property)) {
+      if (!contains(allowedProperties, property)) {
+        props.push(property);
+      }
+    }
+  }
+  return props;
+};
+
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-core/lib/utility/tgi-core-strings.source.js
+ */
+
+/**
+ * left(string, size) - left substring
+ */
+var left = function (string, size) {
+  return string.substring(0, size);
+};
+/**
+ * right(string, size) - right substring
+ */
+var right = function (string, size) {
+  return string.substring(string.length - size, string.length);
+};
+/**
+ * center(string, size) - center substring
+ */
+var center = function (string, size) {
+  var start = (string.length - size)/2;
+  return string.substring(start, start+size);
+};
+/**
+ * trim(s) - remove trailing and leading spaces
+ */
+var trim = function (s) {
+  return s.replace(/^\s+|\s+$/g, '');
+};
+/**
+ * ltrim(s) - remove leading spaces
+ */
+var ltrim = function (s) {
+  return s.replace(/^\s+/, '');
+};
+/**
+ * rtrim(s) - remove trailing spaces
+ */
+var rtrim = function (s) {
+  return s.replace(/\s+$/, '');
+};
+/**
+ * lpad(string, length, fillChar) - pad string left to length filling with fillChar
+ */
+var lpad = function (expr, length, fillChar) {
+  fillChar = fillChar || ' ';
+  var string = '' + expr;
+  if (string.length > length) {
+    return left(string, length);
+  } else {
+    while (string.length < length) {
+      string = fillChar + string;
+    }
+  }
+  return string;
+};
+/**
+ * rpad(string, length, fillChar) - pad string right to length filling with fillChar
+ */
+var rpad = function (expr, length, fillChar) {
+  fillChar = fillChar || ' ';
+  var string = '' + expr;
+  if (string.length > length) {
+    return right(string, length);
+  } else {
+    while (string.length < length) {
+      string = string + fillChar;
+    }
+  }
+  return string;
+};
+/**
+ * cpad(string, length, fillChar) - pad string right & left to length filling with fillChar
+ */
+var cpad = function (expr, length, fillChar) {
+  fillChar = fillChar || ' ';
+  var string = '' + expr;
+  var totalPad = length - string.length;
+  if (string.length > length) {
+    return center(string, length);
+  } else {
+    //if (totalPad > 0) {
+      var leftPad = string.length + Math.floor(totalPad / 2);
+      string = lpad(string, leftPad, fillChar);
+      string = rpad(string, length, fillChar);
+    //}
+  }
+  return string;
+};
+/**---------------------------------------------------------------------------------------------------------------------
+ * tgi-store-json-file/lib/tgi-store-json-file.lib.js
+ */
+TGI.STORE = TGI.STORE || {};
+TGI.STORE.JSONFILE = function () {
+  return {
+    version: '0.0.2',
+    JSONFileStore: JSONFileStore
+  };
+};
+
+/**---------------------------------------------------------------------------------------------------------------------
  * tgi-store-json-file/lib/tgi-store-json-file.source.js
  */
 
@@ -2121,10 +2660,10 @@ JSONFileStore.prototype.getList = function (list, filter, arg3, arg4) {
   /* istanbul ignore next */
   if (typeof exports !== 'undefined') {
     if (typeof module !== 'undefined' && module.exports) {
-      exports = module.exports = JSONFILE;
+      exports = module.exports = TGI;
     }
-    exports.JSONFILE = JSONFILE;
+    exports.TGI = TGI;
   } else {
-    root.JSONFILE = JSONFILE;
+    root.TGI = TGI;
   }
 }).call(this);

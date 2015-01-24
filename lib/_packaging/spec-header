@@ -1,8 +1,5 @@
 /**---------------------------------------------------------------------------------------------------------------------
- * tgi-core/lib/misc/test-header
+ * tgi-store-json-file/lib/_packaging/spec-header
  **/
-(function () {
-"use strict";
-var root = this;
-var testSpec = function(spec,CORE) {
-spec.mute(true);
+  var JSONFileStore = TGI.STORE.JSONFILE().JSONFileStore;
+  spec.mute(true);

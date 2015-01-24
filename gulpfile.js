@@ -12,14 +12,15 @@ var childProcess = require('child_process');
 // Source and _packaging
 var libFiles = [
   'lib/_packaging/lib-header',
-  'lib/tgi-store-json-file.lib.js',
   'node_modules/tgi-core/dist/tgi.core.chunk.js',
+  'lib/tgi-store-json-file.lib.js',
   'lib/tgi-store-json-file.source.js',
   'lib/_packaging/lib-footer'
 ];
 
 // The Spec
 var specFiles = [
+  'node_modules/tgi-core//lib/_packaging/spec-header',
   'lib/_packaging/spec-header',
   'node_modules/tgi-core/dist/tgi.core.spec.chunk.js',
   'lib/tgi-store-json-file.spec.js',

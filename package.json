@@ -1,6 +1,6 @@
 {
   "name": "tgi-store-json-file",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "JSONFILEStore",
   "contributors": [
     {
@@ -10,7 +10,6 @@
   ],
   "dependencies": {
     "tgi-spec": ">=0.1.12",
-    "tgi-utility": "*",
     "tgi-core": "*"
   },
   "scripts": {
