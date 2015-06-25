@@ -8,15 +8,14 @@ var concat = require('gulp-concat');
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 var childProcess = require('child_process');
+var fs = require('fs');
 
 // Source and _packaging
 var libFiles = [
-  'lib/_packaging/lib-header',
-  'node_modules/tgi-core/dist/tgi.core.chunk.js',
   'lib/tgi-store-json-file.lib.js',
-  'lib/tgi-store-json-file.source.js',
-  'lib/_packaging/lib-footer'
+  'lib/tgi-store-json-file.source.js'
 ];
+var libPackaging = ['lib/_packaging/lib-header'].concat(['node_modules/tgi-core/dist/tgi.core.chunk.js']).concat(libFiles).concat(['lib/_packaging/lib-footer']);
 
 // The Spec
 var specFiles = [
@@ -29,11 +28,18 @@ var specFiles = [
 
 // Build Lib
 gulp.task('_buildLib', function () {
-  return gulp.src(libFiles)
+  return gulp.src(libPackaging)
     .pipe(concat('tgi-store-json-file.js'))
     .pipe(gulp.dest('dist'))
     .pipe(rename('tgi-store-json-file.min.js'))
     .pipe(uglify())
+    .pipe(gulp.dest('dist'));
+});
+
+// Build Lib Chunk
+gulp.task('_buildLibChunk', function () {
+  return gulp.src(libFiles)
+    .pipe(concat('tgi.store.json.file.chunk.js'))
     .pipe(gulp.dest('dist'));
 });
 
@@ -45,12 +51,12 @@ gulp.task('_buildSpec', function () {
 });
 
 // Build Task
-gulp.task('build', ['_buildLib', '_buildSpec'], function (callback) {
+gulp.task('build', ['_buildLibChunk', '_buildLib', '_buildSpec'], function (callback) {
   callback();
 });
 
 // Lint Lib
-gulp.task('_lintLib', ['_buildLib'], function (callback) {
+gulp.task('_lintLib', ['_buildLibChunk','_buildLib'], function (callback) {
   return gulp.src('dist/tgi.core.js')
     .pipe(jshint())
     .pipe(jshint.reporter('jshint-stylish'))
@@ -70,8 +76,27 @@ gulp.task('lint', ['_lintLib', '_lintSpec'], function (callback) {
   callback();
 });
 
+// mkdir Task
+gulp.task('mkdir', function (callback) {
+  var pathName = 'json-file-store';
+  fs.mkdir(pathName, undefined, function (err) {
+    if (err) {
+      if (err.code == 'EEXIST')
+        callback();
+      else {
+        var damn = new Error('cannot create "' + pathName+'" folder');
+        console.error(damn);
+        callback(damn);
+      }
+
+    } else {
+      callback();
+    }
+  });
+});
+
 // Test Task
-gulp.task('test', ['lint'], function (callback) {
+gulp.task('test', ['lint','mkdir'], function (callback) {
   childProcess.exec('node spec/node-runner.js', function (error, stdout, stderr) {
     console.log(stdout);
     callback(error);
